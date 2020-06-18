@@ -1,10 +1,12 @@
 package ytcv
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
-func TestFetchALl(t *testing.T) {
-	y := New()
-	videos, err := y.FetchAll()
+func TestFetchAll(t *testing.T) {
+	videos, err := FetchAll(os.Getenv("CHANNEL_ID"))
 	if err != nil {
 		t.Fatal(err)
 	}

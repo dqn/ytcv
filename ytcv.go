@@ -2,21 +2,13 @@ package ytcv
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
 )
-
-type YTCV struct {
-	client *http.Client
-}
-
-func New() *YTCV {
-
-	return &YTCV{}
-}
 
 func getStringInBetween(str, start, end string) (result string) {
 	s := strings.Index(str, start)
@@ -31,14 +23,14 @@ func getStringInBetween(str, start, end string) (result string) {
 	return str[s : s+e]
 }
 
-func (y *YTCV) FetchAll() ([]GridVideoRenderer, error) {
+func FetchAll(channelID string) ([]GridVideoRenderer, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return nil, err
 	}
 	client := &http.Client{Jar: jar}
 
-	req, err := http.NewRequest("GET", "https://www.youtube.com/channel/UCCzUftO8KOVkV4wQG1vkUvg/videos", nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://www.youtube.com/channel/%s/videos", channelID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -79,21 +71,20 @@ func (y *YTCV) FetchAll() ([]GridVideoRenderer, error) {
 	itct = data.ClickTrackingParams
 
 	for continuation != "" {
-
 		req, err = http.NewRequest("GET", "https://www.youtube.com/browse_ajax", nil)
+		if err != nil {
+			return nil, err
+		}
+
 		req.Header = http.Header{
 			"x-youtube-client-name":    {"1"},
 			"x-youtube-client-version": {"2.20200617.02.00"},
 		}
-		v := url.Values{
+		req.URL.RawQuery = url.Values{
 			"ctoken":       {continuation},
 			"continuation": {continuation},
 			"itct":         {itct},
-		}
-		req.URL.RawQuery = v.Encode()
-		if err != nil {
-			return nil, err
-		}
+		}.Encode()
 
 		resp, err = client.Do(req)
 		if err != nil {
